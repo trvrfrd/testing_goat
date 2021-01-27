@@ -3,7 +3,7 @@ from selenium.webdriver.common.keys import Keys
 import time
 import unittest
 
-class NewVisitorText(unittest.TestCase):
+class NewVisitorTest(unittest.TestCase):
 
     def setUp(self):
         self.browser = webdriver.Firefox()
@@ -34,19 +34,24 @@ class NewVisitorText(unittest.TestCase):
 
         table = self.browser.find_element_by_id("id_list_table")
         rows = table.find_elements_by_tag_name("tr")
-        self.assertTrue(
-            any(row.text == "1: wash my face" for row in rows),
-            "New to-do item did not appear in table"
-        )
+        self.assertIn("1: wash my face", [row.text for row in rows])
 
-        # these is still a text box for adding another item. enter
-        # "brush your teeth" (it's hard to even do the basics these days)
-        self.fail("Finish the test!")
+        # these is still a text box for adding another item
+        # enter "brush my teeth" (it's hard to even do the basics these days)
+        inputbox = self.browser.find_element_by_id("id_new_item")
+        inputbox.send_keys("brush my teeth")
+        inputbox.send_keys(Keys.ENTER)
+        time.sleep(1)
 
         # the page updates and shows both items in the list
+        table = self.browser.find_element_by_id("id_list_table")
+        rows = table.find_elements_by_tag_name("tr")
+        self.assertIn("1: wash my face", [row.text for row in rows])
+        self.assertIn("2: brush my teeth", [row.text for row in rows])
 
         # see that the site has generated a unique URL for saving our list
         # and there is some explanatory text to that effect
+        self.fail("Finish the test!")
 
         # we visit the URL and see that our to-do list is still there
 
