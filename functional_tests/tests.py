@@ -1,7 +1,12 @@
 from django.test import LiveServerTestCase
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import WebDriverException
 import time
+
+
+MAX_WAIT = 5
+
 
 class NewVisitorTest(LiveServerTestCase):
 
@@ -13,10 +18,19 @@ class NewVisitorTest(LiveServerTestCase):
         self.browser.quit()
 
 
-    def check_for_row_in_list_table(self, row_text):
-        table = self.browser.find_element_by_id("id_list_table")
-        rows = table.find_elements_by_tag_name("tr")
-        self.assertIn(row_text, [row.text for row in rows])
+    def wait_for_row_in_list_table(self, row_text):
+        start_time = time.time()
+
+        while True:
+            try:
+                table = self.browser.find_element_by_id("id_list_table")
+                rows = table.find_elements_by_tag_name("tr")
+                self.assertIn(row_text, [row.text for row in rows])
+                return
+            except (AssertionError, WebDriverException) as e:
+                if time.time() - start_time > MAX_WAIT:
+                    raise e
+                time.sleep(0.1)
 
 
     def test_can_start_a_list_and_retrieve_it_later(self):
@@ -38,19 +52,17 @@ class NewVisitorTest(LiveServerTestCase):
         # when we hit enter, the page upates, and now the page lists
         # "1: wash your face" as an item in a to-do list
         inputbox.send_keys(Keys.ENTER)
-        time.sleep(1)
-        self.check_for_row_in_list_table("1: wash my face")
+        self.wait_for_row_in_list_table("1: wash my face")
 
         # these is still a text box for adding another item
         # enter "brush my teeth" (it's hard to even do the basics these days)
         inputbox = self.browser.find_element_by_id("id_new_item")
         inputbox.send_keys("brush my teeth")
         inputbox.send_keys(Keys.ENTER)
-        time.sleep(1)
 
         # the page updates and shows both items in the list
-        self.check_for_row_in_list_table("1: wash my face")
-        self.check_for_row_in_list_table("2: brush my teeth")
+        self.wait_for_row_in_list_table("1: wash my face")
+        self.wait_for_row_in_list_table("2: brush my teeth")
 
         # see that the site has generated a unique URL for saving our list
         # and there is some explanatory text to that effect
