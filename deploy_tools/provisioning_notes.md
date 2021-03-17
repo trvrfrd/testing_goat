@@ -4,13 +4,13 @@ Provisioning a new site
 ## Required packages:
 
 * nginx
-* Python 3.6
+* Python 3.8
 * virtualenv + pip
 * Git
 
 eg, on Ubuntu:
 
-    sudo apt-get install nginx git python3.6 python3.6-venv
+    sudo apt-get install nginx git python3.8 python3.8-venv
 
 ## Nginx Virtual Host config
 
