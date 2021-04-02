@@ -1,10 +1,12 @@
 from django.test import TestCase
 from django.utils.html import escape
-from unittest import skip
 
 from lists.views import home_page
 from lists.models import Item, List
-from lists.forms import ItemForm, EMPTY_ITEM_ERROR
+from lists.forms import (
+    DUPLICATE_ITEM_ERROR, EMPTY_ITEM_ERROR,
+    ExistingListItemForm, ItemForm,
+)
 
 
 class HomePageTest(TestCase):
@@ -133,9 +135,16 @@ class ListViewTest(TestCase):
         self.assertTemplateUsed(response, "list.html")
 
 
+    def test_displays_item_form(self):
+        list_ = List.objects.create()
+        response = self.client.get(f"/lists/{list_.id}/")
+        self.assertIsInstance(response.context["form"], ExistingListItemForm)
+        self.assertContains(response, 'name="text"')
+
+
     def test_for_invalid_input_passes_form_to_template(self):
         response = self.post_invalid_input()
-        self.assertIsInstance(response.context["form"], ItemForm)
+        self.assertIsInstance(response.context["form"], ExistingListItemForm)
 
 
     def test_for_invalid_input_shows_error_on_page(self):
@@ -143,7 +152,6 @@ class ListViewTest(TestCase):
         self.assertContains(response, escape(EMPTY_ITEM_ERROR))
 
 
-    @skip
     def test_duplicate_item_validation_errors_end_up_on_lists_page(self):
         list1 = List.objects.create()
         list2 = Item.objects.create(list=list1, text="hello")
@@ -152,14 +160,7 @@ class ListViewTest(TestCase):
             data={"text": "hello"}
         )
 
-        expected_error = escape("You've already got this in your list")
+        expected_error = escape(DUPLICATE_ITEM_ERROR)
         self.assertContains(response, expected_error)
         self.assertTemplateUsed(response, "list.html")
         self.assertEqual(Item.objects.all().count(), 1)
-
-
-    def test_displays_item_form(self):
-        list_ = List.objects.create()
-        response = self.client.get(f"/lists/{list_.id}/")
-        self.assertIsInstance(response.context["form"], ItemForm)
-        self.assertContains(response, 'name="text"')
